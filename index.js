@@ -115,14 +115,22 @@ let fetchTorrent = async (query) => {
     .then(async (results) => {});
 };
 
-function getMeta(id, type) {
-  var [tt, s, e] = id.split(":");
+async function getMeta(id, type) {
+  const [tt, s, e] = id.split(":");
+  const query = type === "series" ? tt : `${tt} ${s} ${e}`;
+
+  const shows = await getShowFromDCool(query, type);
+
+  if (shows.length > 0) {
+    return {
+      name: shows[0].title,
+      year: shows[0].year,
+    };
+  }
 
   return fetch(`https://v2.sg.media-imdb.com/suggestion/t/${tt}.json`)
     .then((res) => res.json())
-    .then((json) => {
-      return json.d[0];
-    })
+    .then((json) => json.d[0])
     .then(({ l, y }) => ({ name: l, year: y }))
     .catch((err) =>
       fetch(`https://v3-cinemeta.strem.io/meta/${type}/${tt}.json`)
@@ -133,6 +141,7 @@ function getMeta(id, type) {
         }))
     );
 }
+
 
 async function getImdbFromKitsu(id) {
   var [kitsu, _id, e] = id.split(":");
