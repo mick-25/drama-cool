@@ -182,13 +182,13 @@ let isSuitable = (resultname = "", name = "") => {
 };
 
 async function getShowFromDCool(query = "", type = "") {
-  let url = `https://www2.dramacool.do/search?keyword=${query.toLowerCase()}&type=movies`;
+  let url = `https://flixhq.to/search?keyword=${query.toLowerCase()}&type=movies`;
 
   console.log({ url });
 
   let headers = {
-    Origin: "https://www2.dramacool.do",
-    Referer: "https://www2.dramacool.do/",
+    Origin: "https://flixhq.to",
+    Referer: "https://flixhq.to/",
     "X-Requested-With": "XMLHttpRequest",
     "User-Agent":
       "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
@@ -220,16 +220,16 @@ async function getSeasonAndEpsFromShow(show, s, e, type) {
   let url = show["url"] ?? "";
   if (!url) return {};
 
-  // let api = `https://www2.dramacool.do${url}`;
-  let api = `https://api-consumet-org-clone-mu.vercel.app/movies/dramacool/info?id=${url}`;
+  // let api = `https://flixhq.to${url}`;
+  let api = `https://kiss-ecru.vercel.app/movies/flixhq/info?id=${url}`;
 
   //list-episode-item-2 all-episode
 
   console.log({ url });
 
   let headers = {
-    Origin: "https://www2.dramacool.do",
-    Referer: "https://www2.dramacool.do/",
+    Origin: "https://flixhq.to",
+    Referer: "https://flixhq.to/",
     Cookie: "accepted_cookies=yes",
     "User-Agent":
       "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
@@ -289,12 +289,12 @@ async function getStreamServers(
 ) {
   console.log("Getting servers...");
   if (!ep["url"]) return [];
-  api = `https://api-consumet-org-clone-mu.vercel.app/movies/dramacool/watch?episodeId=${ep["id"]}&mediaId=${show_url}&server=${server}
+  api = `https://kiss-ecru.vercel.app/movies/flixhq/watch?episodeId=${ep["id"]}&mediaId=${show_url}&server=${server}
   `;
   //
   let headers = {
-    Origin: "https://www2.dramacool.do",
-    Referer: "https://www2.dramacool.do/",
+    Origin: "https://flixhq.to",
+    Referer: "https://flixhq.to/",
     Accept: "application/json",
     "User-Agent":
       "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
@@ -316,7 +316,7 @@ async function getStreamServers(
             return { ...el, id: i + 1 };
           }),
           title,
-          name: `Dramacool ${server}`,
+          name: `flixhq ${server}`,
           type: "series",
           behaviorHints: {
             notWebReady: true,
@@ -339,8 +339,8 @@ async function getEps(server, ep, e) {
   console.log({ api });
 
   let headers = {
-    Origin: "https://www2.dramacool.do",
-    Referer: "https://www2.dramacool.do/",
+    Origin: "https://flixhq.to",
+    Referer: "https://flixhq.to/",
     Accept: "application/json",
     "User-Agent":
       "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
@@ -427,11 +427,11 @@ app
 
     //
     var json = {
-      id: "hy.dcool.stream",
+      id: "hy.flixhq.stream",
       version: "1.0.2",
-      name: "Dramacool",
-      description: "dramacool.do",
-      logo: "https://i.pinimg.com/originals/f6/7a/bd/f67abdee3fbdb4b13ce2f84577c6a2e3.png",
+      name: "flixhq",
+      description: "flixhq.to",
+      logo: "https://cdn.apkboat.com/logos/flixhqto-app.png",
       resources: [
         {
           name: "stream",
