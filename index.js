@@ -229,10 +229,7 @@ async function getSeasonAndEpsFromShow(show, s, e, type) {
   let url = show["url"] ?? "";
   if (!url) return {};
 
-  // let api = `https://flixhq.to${url}`;
   let api = `https://kiss-ecru.vercel.app/movies/flixhq/info?id=${url}`;
-
-  //list-episode-item-2 all-episode
 
   console.log({ url });
 
@@ -243,6 +240,53 @@ async function getSeasonAndEpsFromShow(show, s, e, type) {
     "User-Agent":
       "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
   };
+
+  try {
+    const response = await fetch(api, { headers });
+    const data = await response.json();
+
+    if (data.results && data.results.length > 0) {
+      const result = data.results[0];
+
+      if (result.type === "TV Series") {
+        console.log("TV Series Details:", result);
+
+        if (result.seasons && result.seasons.length > 0) {
+          const seasons = result.seasons;
+          console.log("Seasons:", seasons);
+
+          for (const season of seasons) {
+            console.log(`Processing Season ${season.number}`);
+
+            if (season.episodes && season.episodes.length > 0) {
+              const episodes = season.episodes;
+              console.log("Episodes:", episodes);
+              // Process episodes data as needed
+            } else {
+              console.error("No episodes found for Season", season.number);
+            }
+          }
+        } else {
+          console.error("No seasons found for", title);
+        }
+      } else if (result.type === "Movie") {
+        console.log("Movie Details:", result);
+        // Access Movie information like result.title, result.image, etc.
+        // Process Movie data as needed
+      } else {
+        console.error("Invalid type:", result.type);
+      }
+
+      return result; // Return the result if needed for further processing
+    } else {
+      console.error("No results found for", title);
+      return {};
+    }
+  } catch (error) {
+    console.error("Error fetching data:", error.message);
+    return {};
+  }
+}
 
   return fetch(api)
     .then((res) => res.json())
