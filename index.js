@@ -143,7 +143,6 @@ async function getMeta(id, type) {
     );
 }
 
-
 async function getImdbFromKitsu(id) {
   var [kitsu, _id, e] = id.split(":");
 
@@ -271,104 +270,6 @@ async function getSeasonAndEpsFromShow(show, s, e, type) {
     console.error("Error fetching data:", error.message);
     return {};
   }
-}
-
-
-  return fetch(api)
-    .then((res) => res.json())
-    .then(async (response) => {
-      console.log("Get responses");
-
-      //Get the right eps
-      let ep =
-        type == "series"
-          ? response["episodes"]?.find((el) => {
-              return el["title"].toLowerCase().endsWith(`episode ${e}`);
-            }) ?? {}
-          : response["episodes"][0] ?? {};
-
-      if (!ep || ep == {}) {
-        return [];
-      }
-
-      //Get Server embed urls
-      let urls = await getStreamServers(ep, url, SERVERS.asianload);
-
-      let servers = await Promise.all([
-        getStreamServers(ep, url, ep["title"], SERVERS.asianload),
-        getStreamServers(ep, url, ep["title"], SERVERS.mixdrop),
-        getStreamServers(ep, url, ep["title"], SERVERS.streamsb),
-        getStreamServers(ep, url, ep["title"], SERVERS.streamtape),
-      ]);
-
-      servers = servers.reduce((cumul, current) => {
-        return cumul.concat(current);
-      }, []);
-
-      return servers;
-    })
-    .catch((err) => {
-      console.log({ err });
-      return [];
-    });
-}
-
-const SERVERS = {
-  asianload: "asianload",
-  mixdrop: "mixdrop",
-  streamtape: "streamtape",
-  streamsb: "streamsb",
-};
-
-async function getStreamServers(
-  ep,
-  show_url = "",
-  title,
-  server = "asianload"
-) {
-  console.log("Getting servers...");
-  if (!ep["url"]) return [];
-  api = `https://kiss-ecru.vercel.app/movies/flixhq/watch?episodeId=${ep["id"]}&mediaId=${show_url}&server=${server}
-  `;
-  //
-  let headers = {
-    Origin: "https://flixhq.to",
-    Referer: "https://flixhq.to/",
-    Accept: "application/json",
-    "User-Agent":
-      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
-    "Content-Type": "application/json",
-  };
-
-  return fetch(api, {
-    headers: headers,
-  })
-    .then((res) => res.json())
-    .then(async (response) => {
-      let servers = response["sources"] ?? [];
-      let subtitles = response["subtitles"] ?? [];
-      //
-      servers = servers.map((el) => {
-        return {
-          url: el["url"],
-          subtitles: subtitles.map((el, i) => {
-            return { ...el, id: i + 1 };
-          }),
-          title,
-          name: `flixhq ${server}`,
-          type: "series",
-          behaviorHints: {
-            notWebReady: true,
-          },
-        };
-      });
-
-      return servers;
-    })
-    .catch((err) => {
-      console.log({ err });
-      return null;
-    });
 }
 
 async function getEps(server, ep, e) {
@@ -521,33 +422,59 @@ app
     console.table(shows);
     let showsSaisonsAndEps = await Promise.all([
       ...shows.map((show) => {
-        return getSeasonAndEpsFromShow(
-          show,
-          s,
-          id.includes("kitsu") ? abs_episode : e,
-          media
-        );
+       
+        return getSeasonAndEpsFromShow(show, s, e, media);
       }),
     ]);
 
-    showsSaisonsAndEps = showsSaisonsAndEps.reduce((cumul, actu) => {
-      return cumul.concat(actu ?? []);
-    }, []);
+    console.log({ showsSaisonsAndEps });
 
-    let result = showsSaisonsAndEps;
-
-    result = getUniqueListBy(
-      result.filter((el) => !!el && !!el["url"]),
-      "url"
-    );
-
-    console.log(result);
-
-    console.log({ Final: result.length });
-
-    return res.send({
-      streams: [...result],
+    let episodes = [];
+    showsSaisonsAndEps.forEach((showSaisonAndEps) => {
+      if (showSaisonAndEps.episodes && showSaisonAndEps.episodes.length > 0) {
+        episodes = episodes.concat(showSaisonAndEps.episodes);
+      }
     });
+
+    console.log({ episodes });
+
+    episodes = episodes.filter((ep) => ep.title.includes(`Episode ${e}`));
+
+    if (episodes.length === 0) {
+      return res.send({ stream: {} });
+    }
+
+    let ep = episodes[0];
+
+    console.log({ ep });
+
+    let server = ep["servers"][0];
+    let ep_ = await getEps(server, ep, e);
+
+    console.log({ ep_ });
+
+    if (!ep_ || !ep_.url || ep_.url.length === 0) {
+      return res.send({ stream: {} });
+    }
+
+    let stream_url = ep_.url[0];
+
+    console.log({ stream_url });
+
+    let finalUrl = await isRedirect(stream_url);
+
+    console.log({ finalUrl });
+
+    if (finalUrl) {
+      return res.send({
+        stream: {
+          url: finalUrl,
+          title: `${meta?.name} - Season ${s} Episode ${e}`,
+        },
+      });
+    } else {
+      return res.send({ stream: {} });
+    }
   })
   .listen(process.env.PORT || 3000, () => {
     console.log("The server is working on " + process.env.PORT || 3000);
