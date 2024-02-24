@@ -224,22 +224,16 @@ async function getShowFromDCool(query = "", type = "") {
 }
 
 async function getSeasonAndEpsFromShow(show, s, e, type) {
-  console.log("Getting seasons...");
-
   let title = show["title"];
   let url = show["url"] ?? "";
-  if (!url) return {};
 
   let api = `https://kiss-ecru.vercel.app/movies/flixhq/info?id=${url}`;
-
-  console.log({ url });
 
   let headers = {
     Origin: "https://flixhq.to",
     Referer: "https://flixhq.to/",
     Cookie: "accepted_cookies=yes",
-    "User-Agent":
-      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
+    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
   };
 
   try {
@@ -250,19 +244,12 @@ async function getSeasonAndEpsFromShow(show, s, e, type) {
       const result = data.results[0];
 
       if (result.type === "TV Series") {
-        console.log("TV Series Details:", result);
-
         if (result.seasons && result.seasons.length > 0) {
           const seasons = result.seasons;
-          console.log("Seasons:", seasons);
 
           for (const season of seasons) {
-            console.log(`Processing Season ${season.number}`);
-
             if (season.episodes && season.episodes.length > 0) {
               const episodes = season.episodes;
-              console.log("Episodes:", episodes);
-              // Process episodes data as needed
             } else {
               console.error("No episodes found for Season", season.number);
             }
@@ -271,14 +258,11 @@ async function getSeasonAndEpsFromShow(show, s, e, type) {
           console.error("No seasons found for", title);
         }
       } else if (result.type === "Movie") {
-        console.log("Movie Details:", result);
-        // Access Movie information like result.title, result.image, etc.
-        // Process Movie data as needed
       } else {
         console.error("Invalid type:", result.type);
       }
 
-      return result; // Return the result if needed for further processing
+      return result;
     } else {
       console.error("No results found for", title);
       return {};
@@ -288,6 +272,7 @@ async function getSeasonAndEpsFromShow(show, s, e, type) {
     return {};
   }
 }
+
 
   return fetch(api)
     .then((res) => res.json())
