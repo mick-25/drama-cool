@@ -83,7 +83,8 @@ let isRedirect = async (url) => {
         response.url
       );
       if (locationURL.href.startsWith("http")) {
-        await isRedirect(locationURL);
+        await isRedirect(locationURL.href);
+
       } else {
         return locationURL.href;
       }
