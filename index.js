@@ -424,7 +424,6 @@ app.get("/manifest.json", (req, res) => {
           },
         ],
       },
-      // <-- Add closing parenthesis here
     ], // <-- Closing parenthesis for the "catalogs" array
   });
 }); // <-- Closing parenthesis for the "/manifest.json" endpoint
