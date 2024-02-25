@@ -455,18 +455,34 @@ app.get("/stream/:type/:id/:extra/:index/:sid/:sindex.json", async (req, res) =>
   let videoURL = "";
 
   // implement the logic to get the video URL based on the parameters
-  if (protocol === "hls") {
-    // HLS streaming logic
-    // example: videoURL = getHLSVideoURL(id, sid, sindex);
-  } else if (protocol === "http" || protocol === "https") {
-    // Direct HTTP streaming logic
-    // example: videoURL = getHTTPVideoURL(id, sid, sindex);
+  // implement the logic to get the video URL based on the parameters
+if (protocol === "hls") {
+  // HLS streaming logic
+  // example: videoURL = getHLSVideoURL(id, sid, sindex);
+} else if (protocol === "http" || protocol === "https") {
+  // Direct HTTP streaming logic
+  // example: videoURL = getHTTPVideoURL(id, sid, sindex);
+  
+  const apiUrl = `https://kiss-ecru.vercel.app/movies/flixhq/${id}`;
+  
+  // Fetch the data from the provided API endpoint
+  const response = await fetch(apiUrl);
+  const data = await response.json();
+  
+  // Check if the data contains results
+  if (data.results && data.results.length > 0) {
+    // Assuming you want the first result, you can modify this accordingly
+    const firstResult = data.results[0];
+    
+    // Extract the URL from the first result
+    videoURL = firstResult.url;
   }
+}
 
-  if (!videoURL) {
-    res.status(404).json({ error: "Video not found" });
-    return;
-  }
+if (!videoURL) {
+  res.status(404).json({ error: "Video not found" });
+  return;
+}
 
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.json({
