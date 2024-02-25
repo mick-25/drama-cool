@@ -422,7 +422,7 @@ app.get("/manifest.json", (req, res) => {
       ]
     }
   ]
-}
+} // <-- Missing closing parenthesis for the "catalogs" array
 
 
 app.get("/catalog/flixhq/:type.json", async (req, res) => {
