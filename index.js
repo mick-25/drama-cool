@@ -424,11 +424,13 @@ app.get("/manifest.json", (req, res) => {
           },
         ],
       },
-    ],
+      // <-- Add closing parenthesis here
+    ], // <-- Closing parenthesis for the "catalogs" array
   });
-});
+}); // <-- Closing parenthesis for the "/manifest.json" endpoint
 
-// <-- Missing closing parenthesis for the "catalogs" array
+// ... (rest of your code)
+ing closing parenthesis for the "catalogs" array
 
 
 app.get("/catalog/flixhq/:type.json", async (req, res) => {
