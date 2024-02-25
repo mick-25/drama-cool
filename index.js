@@ -1,6 +1,5 @@
 require("dotenv").config();
 const express = require("express");
-const app = express();
 const fetch = require("node-fetch");
 const HTMLParser = require("node-html-parser");
 const FormData = require("form-data");
@@ -19,7 +18,8 @@ const {
   filelions,
 } = require("./helper");
 const { getUniqueListBy } = require("./utils");
-// ... (your existing code)
+
+const app = express();
 
 // Function to search for movies
 async function searchMovies(query) {
@@ -73,9 +73,6 @@ app.get("/search/:query.json", async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.json({ metas: results });
 });
-
-// ... (rest of your existing code)
-
 
 function getSize(size) {
   var gb = 1024 * 1024 * 1024;
@@ -198,7 +195,7 @@ async function getImdbFromKitsu(id) {
   return fetch(`https://anime-kitsu.strem.fun/meta/anime/${kitsu}:${_id}.json`)
     .then((_res) => _res.json())
     .then((json) => {
-      return json["meta"];
+      return json      ["meta"];
     })
     .then((json) => {
       try {
@@ -401,35 +398,25 @@ function cleanUrl(url = "") {
 }
 
 app.get("/manifest.json", (req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Content-Type", "application/json");
   res.json({
-    name: "Stremio Unofficial Addon",
-    id: "community.unofficial-addon",
+    name: "Stremio FlixHQ Addon",
+    id: "community.flixhq",
+    description: "Watch movies and series from FlixHQ",
     version: "1.0.0",
-    description: "Unofficial Stremio Addon for various streaming sources",
-    resources: ["catalog", "stream"],
+    resources: ["catalog", "meta", "stream"],
     types: ["movie", "series"],
-    idPrefixes: ["tt", "kitsu"],
+    idPrefixes: ["flixhq"],
     catalogs: [
       {
-        id: "community.unofficial-addon",
+        id: "flixhq",
+        name: "FlixHQ",
         type: "movie",
-        name: "Movies",
         extra: [
           {
-            name: "genres",
+            name: "search",
             isRequired: false,
-          },
-        ],
-      },
-      {
-        id: "community.unofficial-addon",
-        type: "series",
-        name: "Series",
-        extra: [
-          {
-            name: "genres",
-            isRequired: false,
+            isUnique: false,
           },
         ],
       },
@@ -437,125 +424,181 @@ app.get("/manifest.json", (req, res) => {
   });
 });
 
-app.get("/catalog/:type/:id/:extra?.json", async (req, res) => {
-  let { type, id, extra } = req.params;
-  if (!type || !id) {
-    res.status(400).json({ error: "Invalid request" });
-    return;
-  }
+app.get("/catalog/flixhq/:type.json", async (req, res) => {
+  const { type } = req.params;
 
-  let { genre } = req.query;
-
-  if (type == "movie" || type == "series") {
-    const meta = await getMeta(id, type);
-    if (!meta) {
-      res.status(404).json({ error: "Meta not found" });
-      return;
-    }
-
-    const catalog = {
-      id: `community.unofficial-addon|${type}|${id}`,
-      name: meta.name,
-      type: type,
-      poster: `https://www.themoviedb.org/t/p/w600_and_h900_bestv2/${id}.jpg`,
-      genres: genre ? [genre] : [],
-      videos: [
-        {
-          id: id,
-          name: meta.name,
-          poster: `https://www.themoviedb.org/t/p/w600_and_h900_bestv2/${id}.jpg`,
-          released: +meta.year,
-        },
-      ],
-    };
-
-        res.setHeader("Access-Control-Allow-Origin", "*");
-    res.json({ metas: [catalog] });
-  } else {
-    res.status(404).json({ error: "Invalid type" });
-  }
-});
-
-app.get("/stream/:type/:id/:extra/:index/:sid/:sindex.json", async (req, res) => {
-  let { type, id, extra, index, sid, sindex } = req.params;
-
-  let { version, protocol } = req.query;
-  if (!type || !id || !extra || !index || !sid || !sindex || !version || !protocol) {
-    res.status(400).json({ error: "Invalid request" });
-    return;
-  }
-
-  let meta;
-  if (type === "movie" || type === "series") {
-    meta = await getMeta(id, type);
-  } else {
+  if (type !== "movie") {
     res.status(404).json({ error: "Invalid type" });
     return;
   }
 
-  if (!meta) {
-    res.status(404).json({ error: "Meta not found" });
-    return;
-  }
+  res.setHeader("Content-Type", "application/json");
 
-  if (version !== "1.0") {
-    res.status(400).json({ error: "Invalid version" });
-    return;
-  }
-
-  let videoURL = "";
-
-  // Implement the logic to get the video URL based on the parameters
-  if (protocol === "hls") {
-    // HLS streaming logic
-    // Example: videoURL = getHLSVideoURL(id, sid, sindex);
-  } else if (protocol === "http" || protocol === "https") {
-    // Direct HTTP streaming logic
-    // Example: videoURL = getHTTPVideoURL(id, sid, sindex);
-    const apiUrl = `https://kiss-ecru.vercel.app/movies/flixhq/${id}`;
-  
-    try {
-      // Fetch the data from the provided API endpoint
-      const response = await fetch(apiUrl);
-      const data = await response.json();
-      
-      // Check if the data contains results
-      if (data.results && data.results.length > 0) {
-        // Assuming you want the first result, you can modify this accordingly
-        const firstResult = data.results[0];
-        
-        // Extract the URL from the first result
-        videoURL = firstResult.url;
-      }
-    } catch (error) {
-      console.error("Error fetching video URL:", error.message);
-      res.status(500).json({ error: "Internal Server Error" });
-      return;
-    }
-  }
-
-  if (!videoURL) {
-    res.status(404).json({ error: "Video not found" });
-    return;
-  }
-
-  res.setHeader("Access-Control-Allow-Origin", "*");
   res.json({
-    streams: [
+    metas: [
       {
-        title: meta.name,
-        infoHash: "infoHash",
-        contentType: "video/mp4",
-        url: videoURL,
+        id: "flixhq:recent",
+        type: "flixhq",
+        name: "Recent Movies",
+        poster:
+          "https://img.flixhq.to/xxrz/250x400/379/17/5c/175c58ef507c3b92a77825d04569a3ed/175c58ef507c3b92a77825d04569a3ed.jpg",
       },
     ],
   });
 });
 
+app.get("/catalog/:type/:id.json", async (req, res) => {
+  const { type, id } = req.params;
+
+  if (type !== "flixhq") {
+    res.status(404).json({ error: "Invalid type" });
+    return;
+  }
+
+  res.setHeader("Content-Type", "application/json");
+
+  if (id === "recent") {
+    const recentMovies = await searchMovies("recent");
+    const metas = recentMovies.map((movie) => ({
+      id: movie.id,
+      type: "movie",
+      name: movie.name,
+      poster: movie.poster,
+    }));
+
+    res.json({ metas });
+  } else {
+    res.status(404).json({ error: "Invalid ID" });
+  }
+});
+
+app.get("/meta/:type/:id.json", async (req, res) => {
+  const { type, id } = req.params;
+
+  if (type !== "movie" && type !== "series") {
+    res.status(404).json({ error: "Invalid type" });
+    return;
+  }
+
+  res.setHeader("Content-Type", "application/json");
+
+  if (id.startsWith("flixhq:")) {
+    const [_, flixhqId] = id.split(":");
+    const [flixhqType, imdbId, season, episode] = flixhqId.split("|");
+
+    const meta = await getMeta(imdbId, flixhqType);
+
+    res.json(meta);
+  } else {
+    res.status(404).json({ error: "Invalid ID" });
+  }
+});
+
+app.get("/stream/:type/:id/:season/:episode/:index.json", async (req, res) => {
+  const { type, id, season, episode, index } = req.params;
+
+  if (type !== "movie" && type !== "series") {
+    res.status(404).json({ error: "Invalid type" });
+    return;
+  }
+
+  res.setHeader("Content-Type", "application/json");
+
+  if (id.startsWith("flixhq:")) {
+    const [_, flixhqId] = id.split(":");
+    const [flixhqType, imdbId] = flixhqId.split("|");
+
+    let result = null;
+
+    if (type === "series") {
+      result = await getImdbFromKitsu(id);
+    } else {
+      result = await getImdbFromKitsu(id);
+    }
+
+    if (result) {
+      const [imdbId, s, e, s_, e_, byEpisode] = await getImdbFromKitsu(id);
+
+      let server = voe;
+
+      if (isSuitable(id, "doodstream")) {
+        server = doodstream;
+      } else if (isSuitable(id, "filelions")) {
+        server = filelions;
+      } else if (isSuitable(id, "sibnet")) {
+        server = sibnet;
+      } else if (isSuitable(id, "myvitop")) {
+        server = myvitop;
+      }
+
+      if (type === "movie") {
+        const url = await sendVid(id, server);
+
+        if (url) {
+          res.json({
+            streams: [
+              {
+                title: "Movie",
+                infoHash: "",
+                availability: 0,
+                url: cleanUrl(url),
+              },
+            ],
+          });
+        } else {
+          res.status(404).json({ error: "No streams found" });
+        }
+      } else {
+        const show = await getShowFromDCool(result["name"], type);
+
+        if (show.length > 0) {
+          const seasonAndEps = await getSeasonAndEpsFromShow(show[0], s, e, type);
+
+          if (seasonAndEps) {
+            const episodes = seasonAndEps["episodes"];
+            const episodeData = episodes.find(
+              (epData) => epData.episode === episode
+            );
+
+            if (episodeData) {
+              const eps = await getEps(server, episodeData, e);
+
+              if (eps) {
+                res.json({
+                  streams: [
+                    {
+                      title: `Episode ${e}`,
+                      infoHash: "",
+                      availability: 0,
+                      url: cleanUrl(eps.url),
+                    },
+                  ],
+                });
+              } else {
+                res.status(404).json({ error: "No streams found" });
+              }
+            } else {
+              res.status(404).json({ error: "Episode not found" });
+            }
+          } else {
+            res.status(404).json({ error: "Season not found" });
+          }
+        } else {
+          res.status(404).json({ error: "Show not found" });
+        }
+      }
+    } else {
+      res.status(404).json({ error: "Meta not found" });
+    }
+  } else {
+    res.status(404).json({ error: "Invalid ID" });
+  }
+});
 
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
 
