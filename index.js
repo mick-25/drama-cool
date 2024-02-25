@@ -19,6 +19,63 @@ const {
   filelions,
 } = require("./helper");
 const { getUniqueListBy } = require("./utils");
+// ... (your existing code)
+
+// Function to search for movies
+async function searchMovies(query) {
+  const url = `https://flixhq.to/search/${encodeURIComponent(query)}`;
+  const headers = {
+    Origin: "https://flixhq.to",
+    Referer: "https://flixhq.to/",
+    "X-Requested-With": "XMLHttpRequest",
+    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
+  };
+
+  try {
+    const html = await getDoc(url, url, headers);
+    const parsedRes = HTMLParser.parse(html ?? "");
+    const rawResults = parsedRes.querySelectorAll("ul.list-episode-item li a") ?? [];
+
+    const results = rawResults.map((el) => {
+      return {
+        title: el?.querySelector("h3")?.textContent ?? "Unknown",
+        url: el?.attributes["href"],
+      };
+    });
+
+    const response = results.map((result) => ({
+      id: `movie|${result.title.toLowerCase().replace(/\s+/g, '-')}-${result.url.split('-').pop()}`,
+      type: "movie",
+      name: result.title,
+      poster: `https://img.flixhq.to/xxrz/250x400/379/17/5c/175c58ef507c3b92a77825d04569a3ed/175c58ef507c3b92a77825d04569a3ed.jpg`, // You may replace this with the actual poster URL
+      genres: [], // Populate with actual genres if available
+      releaseInfo: "", // Add release information if available
+    }));
+
+    return response;
+  } catch (error) {
+    console.error("Error searching movies:", error.message);
+    return [];
+  }
+}
+
+// Endpoint for searching movies
+app.get("/search/:query.json", async (req, res) => {
+  const { query } = req.params;
+
+  if (!query) {
+    res.status(400).json({ error: "Invalid request" });
+    return;
+  }
+
+  const results = await searchMovies(query);
+
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.json({ metas: results });
+});
+
+// ... (rest of your existing code)
+
 
 function getSize(size) {
   var gb = 1024 * 1024 * 1024;
