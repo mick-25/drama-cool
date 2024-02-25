@@ -404,28 +404,27 @@ function cleanUrl(url = "") {
 app.get("/manifest.json", (req, res) => {
   res.setHeader("Content-Type", "application/json");
   res.json({
-    "id": "community.flixhq",
-    "version": "1.0.0",
-    "name": "Stremio FlixHQ Addon",
-    "description": "Watch movies and series from FlixHQ",
-    "logo": "https://img.flixhq.to/xxrz/250x400/379/17/5c/175c58ef507c3b92a77825d04569a3ed/175c58ef507c3b92a77825d04569a3ed.jpg",
-    "resources": ["catalog", "meta", "stream"],
-    "types": ["movie", "series"],
-    "idPrefixes": ["flixhq"],
-    "catalogs": [
+    name: "Stremio FlixHQ Addon",
+    id: "community.flixhq",
+    description: "Watch movies and series from FlixHQ",
+    version: "1.0.0",
+    resources: ["catalog", "meta", "stream"],
+    types: ["movie", "series"],
+    idPrefixes: ["flixhq"],
+    catalogs: [
       {
-        "id": "flixhq",
-        "name": "FlixHQ",
-        "type": "movie",
-        "extra": [
+        id: "flixhq",
+        name: "FlixHQ",
+        type: "movie",
+        extra: [
           {
-            "name": "search",
-            "isRequired": false,
-            "isUnique": false
-          }
-        ]
-      }
-    ]  // <-- Closing parenthesis added here
+            name: "search",
+            isRequired: false,
+            isUnique: false,
+          },
+        ],
+      },
+    ],
   });
 });
 
