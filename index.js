@@ -422,8 +422,8 @@ app.get("/catalog/:type/:id/:extra?.json", async (req, res) => {
 app.get("/stream/:type/:id/:extra/:index/:sid/:sindex.json", async (req, res) => {
   let { type, id, extra, index, sid, sindex } = req.params;
 
-  let { version } = req.query;
-  if (!type || !id || !extra || !index || !sid || !sindex || !version) {
+  let { version, protocol } = req.query;
+  if (!type || !id || !extra || !index || !sid || !sindex || !version || !protocol) {
     res.status(400).json({ error: "Invalid request" });
     return;
   }
@@ -446,43 +446,41 @@ app.get("/stream/:type/:id/:extra/:index/:sid/:sindex.json", async (req, res) =>
     return;
   }
 
-  const { protocol, version: v } = req.query;
-  if (!protocol || !v) {
-    res.status(400).json({ error: "Invalid request" });
-    return;
-  }
-
   let videoURL = "";
 
-  // implement the logic to get the video URL based on the parameters
-  // implement the logic to get the video URL based on the parameters
-if (protocol === "hls") {
-  // HLS streaming logic
-  // example: videoURL = getHLSVideoURL(id, sid, sindex);
-} else if (protocol === "http" || protocol === "https") {
-  // Direct HTTP streaming logic
-  // example: videoURL = getHTTPVideoURL(id, sid, sindex);
+  // Implement the logic to get the video URL based on the parameters
+  if (protocol === "hls") {
+    // HLS streaming logic
+    // Example: videoURL = getHLSVideoURL(id, sid, sindex);
+  } else if (protocol === "http" || protocol === "https") {
+    // Direct HTTP streaming logic
+    // Example: videoURL = getHTTPVideoURL(id, sid, sindex);
+    const apiUrl = `https://kiss-ecru.vercel.app/movies/flixhq/${id}`;
   
-  const apiUrl = `https://kiss-ecru.vercel.app/movies/flixhq/${id}`;
-  
-  // Fetch the data from the provided API endpoint
-  const response = await fetch(apiUrl);
-  const data = await response.json();
-  
-  // Check if the data contains results
-  if (data.results && data.results.length > 0) {
-    // Assuming you want the first result, you can modify this accordingly
-    const firstResult = data.results[0];
-    
-    // Extract the URL from the first result
-    videoURL = firstResult.url;
+    try {
+      // Fetch the data from the provided API endpoint
+      const response = await fetch(apiUrl);
+      const data = await response.json();
+      
+      // Check if the data contains results
+      if (data.results && data.results.length > 0) {
+        // Assuming you want the first result, you can modify this accordingly
+        const firstResult = data.results[0];
+        
+        // Extract the URL from the first result
+        videoURL = firstResult.url;
+      }
+    } catch (error) {
+      console.error("Error fetching video URL:", error.message);
+      res.status(500).json({ error: "Internal Server Error" });
+      return;
+    }
   }
-}
 
-if (!videoURL) {
-  res.status(404).json({ error: "Video not found" });
-  return;
-}
+  if (!videoURL) {
+    res.status(404).json({ error: "Video not found" });
+    return;
+  }
 
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.json({
@@ -496,6 +494,7 @@ if (!videoURL) {
     ],
   });
 });
+
 
 const PORT = process.env.PORT || 3000;
 
