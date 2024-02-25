@@ -401,6 +401,10 @@ function cleanUrl(url = "") {
 // ...
 // <-- Missing closing parenthesis for the "catalogs" array
 
+// Existing code
+// ...
+// <-- Missing closing parenthesis for the "catalogs" array
+
 app.get("/manifest.json", (req, res) => {
   res.setHeader("Content-Type", "application/json");
   res.json({
@@ -423,8 +427,8 @@ app.get("/manifest.json", (req, res) => {
             isUnique: false,
           },
         ],
-      },
-    ], // <-- Closing parenthesis for the "catalogs" array
+      }, // <-- Closing parenthesis for the "catalogs" array
+    ],
   });
 }); // <-- Closing parenthesis for the "/manifest.json" endpoint
 
