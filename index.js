@@ -2,7 +2,6 @@ require("dotenv").config();
 const express = require("express");
 const app = express();
 const fetch = require("node-fetch");
-const bodyParser = require("body-parser");
 const HTMLParser = require("node-html-parser");
 const FormData = require("form-data");
 const axios = require("axios");
@@ -49,8 +48,6 @@ function getQuality(name) {
   return "";
 }
 
-// ----------------------------------------------
-
 let isVideo = (element) => {
   return (
     element["name"]?.toLowerCase()?.includes(`.mkv`) ||
@@ -61,8 +58,6 @@ let isVideo = (element) => {
     element["name"]?.toLowerCase()?.includes(`.flv`)
   );
 };
-
-//------------------------------------------------------------------------------------------
 
 let isRedirect = async (url) => {
   try {
@@ -84,18 +79,15 @@ let isRedirect = async (url) => {
       );
       if (locationURL.href.startsWith("http")) {
         await isRedirect(locationURL.href);
-
       } else {
         return locationURL.href;
       }
     } else if (response.status >= 200 && response.status < 300) {
       return response.url;
     } else {
-      // return response.url;
       return null;
     }
   } catch (error) {
-    // console.log({ error });
     return null;
   }
 };
@@ -181,8 +173,6 @@ let isSuitable = (resultname = "", name = "") => {
       word.length >= 3 &&
       !["the", "a", "an", "to", "too"].includes(word.toLowerCase())
     ) {
-      // console.log({ word });
-      // console.log({ resultname });
       check = check && resultname?.toLowerCase().includes(word?.toLowerCase());
       if (!check) return check;
     }
@@ -193,8 +183,6 @@ let isSuitable = (resultname = "", name = "") => {
 async function getShowFromDCool(query = "", type = "") {
   let url = `https://flixhq.to/search?keyword=${query.toLowerCase()}&type=movies`;
 
-  console.log({ url });
-
   let headers = {
     Origin: "https://flixhq.to",
     Referer: "https://flixhq.to/",
@@ -204,18 +192,18 @@ async function getShowFromDCool(query = "", type = "") {
   };
 
   let html = await getDoc(url, url, headers);
-  // console.log(html);
   let parsedRes = HTMLParser.parse(html ?? "");
 
   let rawResults =
     parsedRes.querySelectorAll("ul.list-episode-item li a") ?? [];
 
-  parsedRes = rawResults.map((el) => {
-    return {
-      title: el?.querySelector("h3")?.textContent ?? "Unknown",
-      url: el?.attributes["href"],
-    };
-  });
+  parsedRes = rawResults.map
+    ((el) => {
+      return {
+        title: el?.querySelector("h3")?.textContent ?? "Unknown",
+        url: el?.attributes["href"],
+      };
+    });
 
   let response_ = parsedRes.filter((el, i) => isSuitable(el["title"], query));
 
@@ -238,7 +226,6 @@ async function getSeasonAndEpsFromShow(show, s, e, type) {
   try {
     const response = await fetch(api, { headers });
     const data = await response.json();
-
     if (data.results && data.results.length > 0) {
       const result = data.results[0];
 
@@ -257,6 +244,7 @@ async function getSeasonAndEpsFromShow(show, s, e, type) {
           console.error("No seasons found for", title);
         }
       } else if (result.type === "Movie") {
+        // handle movie logic if needed
       } else {
         console.error("Invalid type:", result.type);
       }
@@ -282,8 +270,7 @@ async function getEps(server, ep, e) {
     Origin: "https://flixhq.to",
     Referer: "https://flixhq.to/",
     Accept: "application/json",
-    "User-Agent":
-      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
+    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
     "Content-Type": "application/json",
   };
 
@@ -294,7 +281,6 @@ async function getEps(server, ep, e) {
     .then(async (response) => {
       let html = response.split("\n").join("");
       let parsedRes = HTMLParser.parse(html).textContent;
-
       let regex = /\[\s*[\"\']([\w\W]*?)[\'\"],\s*\];/g;
 
       let doc2 = await getDoc(`${server}${ep["url"] ?? ""}`);
@@ -329,8 +315,6 @@ async function getEps(server, ep, e) {
             .filter((el) => !!el),
         };
       } else if (e >= +start && e <= +end) {
-        // console.log({ start });
-        // console.log({ end });
         ep_ = {
           title: `Episode ${e} ${ep["url"].includes("/vf") ? " VF" : ""}`,
           url: allEps
@@ -359,123 +343,147 @@ function cleanUrl(url = "") {
   return url;
 }
 
-app
-  .get("/manifest.json", (req, res) => {
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Headers", "*");
-    res.setHeader("Content-Type", "application/json");
+app.get("/manifest.json", (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.json({
+    name: "Stremio Unofficial Addon",
+    id: "community.unofficial-addon",
+    version: "1.0.0",
+    description: "Unofficial Stremio Addon for various streaming sources",
+    resources: ["catalog", "stream"],
+    types: ["movie", "series"],
+    idPrefixes: ["tt", "kitsu"],
+    catalogs: [
+      {
+        id: "community.unofficial-addon",
+        type: "movie",
+        name: "Movies",
+        extra: [
+          {
+            name: "genres",
+            isRequired: false,
+          },
+        ],
+      },
+      {
+        id: "community.unofficial-addon",
+        type: "series",
+        name: "Series",
+        extra: [
+          {
+            name: "genres",
+            isRequired: false,
+          },
+        ],
+      },
+    ],
+  });
+});
 
-    //
-    var json = {
-      id: "hy.flixhq.stream",
-      version: "1.0.2",
-      name: "flixhq",
-      description: "flixhq.to",
-      logo: "https://cdn.apkboat.com/logos/flixhqto-app.png",
-      resources: [
+app.get("/catalog/:type/:id/:extra?.json", async (req, res) => {
+  let { type, id, extra } = req.params;
+  if (!type || !id) {
+    res.status(400).json({ error: "Invalid request" });
+    return;
+  }
+
+  let { genre } = req.query;
+
+  if (type == "movie" || type == "series") {
+    const meta = await getMeta(id, type);
+    if (!meta) {
+      res.status(404).json({ error: "Meta not found" });
+      return;
+    }
+
+    const catalog = {
+      id: `community.unofficial-addon|${type}|${id}`,
+      name: meta.name,
+      type: type,
+      poster: `https://www.themoviedb.org/t/p/w600_and_h900_bestv2/${id}.jpg`,
+      genres: genre ? [genre] : [],
+      videos: [
         {
-          name: "stream",
-          types: ["movie", "series", "anime"],
-          idPrefixes: ["tt"],
+          id: id,
+          name: meta.name,
+          poster: `https://www.themoviedb.org/t/p/w600_and_h900_bestv2/${id}.jpg`,
+          released: +meta.year,
         },
       ],
-      types: ["movie", "series", "other", "anime"],
-      catalogs: [],
     };
 
-    return res.send(json);
-  })
-  .get("/stream/:type/:id", async (req, res) => {
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Headers", "*");
-    res.setHeader("Content-Type", "application/json");
+        res.setHeader("Access-Control-Allow-Origin", "*");
+    res.json({ metas: [catalog] });
+  } else {
+    res.status(404).json({ error: "Invalid type" });
+  }
+});
 
-    //
-    let media = req.params.type;
-    let id = req.params.id;
-    id = id.replace(".json", "");
+app.get("/stream/:type/:id/:extra/:index/:sid/:sindex.json", async (req, res) => {
+  let { type, id, extra, index, sid, sindex } = req.params;
 
-    let tmp = [];
+  let { version } = req.query;
+  if (!type || !id || !extra || !index || !sid || !sindex || !version) {
+    res.status(400).json({ error: "Invalid request" });
+    return;
+  }
 
-    if (id.includes("kitsu")) {
-      tmp = await getImdbFromKitsu(id);
-      if (!tmp) {
-        return res.send({ stream: {} });
-      }
-    } else {
-      tmp = id.split(":");
-    }
+  let meta;
+  if (type === "movie" || type === "series") {
+    meta = await getMeta(id, type);
+  } else {
+    res.status(404).json({ error: "Invalid type" });
+    return;
+  }
 
-    let [tt, s, e, abs_season, abs_episode, abs] = tmp;
+  if (!meta) {
+    res.status(404).json({ error: "Meta not found" });
+    return;
+  }
 
-    console.log(tmp);
+  if (version !== "1.0") {
+    res.status(400).json({ error: "Invalid version" });
+    return;
+  }
 
-    let meta = await getMeta(tt, media);
+  const { protocol, version: v } = req.query;
+  if (!protocol || !v) {
+    res.status(400).json({ error: "Invalid request" });
+    return;
+  }
 
-    console.log({ meta: id });
-    console.log({ name: meta?.name, year: meta?.year });
+  let videoURL = "";
 
-    let query = "";
-    query = meta?.name;
+  // implement the logic to get the video URL based on the parameters
+  if (protocol === "hls") {
+    // HLS streaming logic
+    // example: videoURL = getHLSVideoURL(id, sid, sindex);
+  } else if (protocol === "http" || protocol === "https") {
+    // Direct HTTP streaming logic
+    // example: videoURL = getHTTPVideoURL(id, sid, sindex);
+  }
 
-    let shows = await getShowFromDCool(query, media);
-    console.table(shows);
-    let showsSaisonsAndEps = await Promise.all([
-      ...shows.map((show) => {
-       
-        return getSeasonAndEpsFromShow(show, s, e, media);
-      }),
-    ]);
+  if (!videoURL) {
+    res.status(404).json({ error: "Video not found" });
+    return;
+  }
 
-    console.log({ showsSaisonsAndEps });
-
-    let episodes = [];
-    showsSaisonsAndEps.forEach((showSaisonAndEps) => {
-      if (showSaisonAndEps.episodes && showSaisonAndEps.episodes.length > 0) {
-        episodes = episodes.concat(showSaisonAndEps.episodes);
-      }
-    });
-
-    console.log({ episodes });
-
-    episodes = episodes.filter((ep) => ep.title.includes(`Episode ${e}`));
-
-    if (episodes.length === 0) {
-      return res.send({ stream: {} });
-    }
-
-    let ep = episodes[0];
-
-    console.log({ ep });
-
-    let server = ep["servers"][0];
-    let ep_ = await getEps(server, ep, e);
-
-    console.log({ ep_ });
-
-    if (!ep_ || !ep_.url || ep_.url.length === 0) {
-      return res.send({ stream: {} });
-    }
-
-    let stream_url = ep_.url[0];
-
-    console.log({ stream_url });
-
-    let finalUrl = await isRedirect(stream_url);
-
-    console.log({ finalUrl });
-
-    if (finalUrl) {
-      return res.send({
-        stream: {
-          url: finalUrl,
-          title: `${meta?.name} - Season ${s} Episode ${e}`,
-        },
-      });
-    } else {
-      return res.send({ stream: {} });
-    }
-  })
-  .listen(process.env.PORT || 3000, () => {
-    console.log("The server is working on " + process.env.PORT || 3000);
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.json({
+    streams: [
+      {
+        title: meta.name,
+        infoHash: "infoHash",
+        contentType: "video/mp4",
+        url: videoURL,
+      },
+    ],
   });
+});
+
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
+
